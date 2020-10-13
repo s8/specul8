@@ -2,6 +2,8 @@
 
 #include "ofMain.h"
 #include "ofxGui.h"
+#include "ofxCv.h"
+
 using namespace glm;
 
 class ofApp : public ofBaseApp{
@@ -23,8 +25,8 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-    ofxPanel gui;
-    ofParameter <ofVec3f> uiPosition;
+//    ofxPanel gui;
+//    ofParameter <ofVec3f> uiPosition;
     
     ofFbo shaderFbo;
 
@@ -40,7 +42,14 @@ class ofApp : public ofBaseApp{
     float matShininess;
     vec4 lightPosition;
     ofFloatColor lightColor;
-//    ofImage environmentMap;
-//    float matReflectivity;
+    
+    ofVideoGrabber webcam;
+    
+    ofxCv::ContourFinder contour;
+    
+    ofxPanel gui;
+    ofParameter<float> min, max, threshold;
+    ofParameter<bool> hole;
+
 		
 };

@@ -23,6 +23,8 @@ uniform mat4 projectionMatrix;
 uniform mat4 textureMatrix;
 uniform mat4 modelViewProjectionMatrix;
 
+uniform sampler2DRect specularTexture;
+
 void pointLight(in vec3 normal, in vec3 surfacePosition, inout vec3 diffuse, inout vec3 specular){
     float nDotVP;       // normal . light direction
     float nDotHV;       // normal . light half vector
