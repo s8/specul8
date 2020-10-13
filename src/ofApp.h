@@ -25,8 +25,10 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
-//    ofxPanel gui;
-//    ofParameter <ofVec3f> uiPosition;
+    void setUniforms();
+    
+    ofxPanel gui;
+    ofParameter <ofVec3f> uiPosition;
     
     ofFbo shaderFbo;
 
@@ -43,13 +45,19 @@ class ofApp : public ofBaseApp{
     vec4 lightPosition;
     ofFloatColor lightColor;
     
-    ofVideoGrabber webcam;
+
     
+    //
+    // ofxCV setup
+    //
+    
+//    ofVideoGrabber webcam;
     ofxCv::ContourFinder contour;
-    
-    ofxPanel gui;
+//    ofxPanel gui;
     ofParameter<float> min, max, threshold;
     ofParameter<bool> hole;
+    
+    ofPixels fboPixels;
 
 		
 };

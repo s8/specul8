@@ -3,10 +3,24 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     
+    //
+    // lighting gui setup
+    //
     gui.setup();
-    gui.add(uiPosition.set("position",ofVec3f(0,0,0),ofVec3f(-30,-30,-30),ofVec3f(30,30,30)));
+//    gui.add(uiPosition.set("position",ofVec3f(0,0,0),ofVec3f(-30,-30,-30),ofVec3f(30,30,30)));
+    
+//
+// ofxCV setup
+//
+//    webcam.setup(640,480);
+    gui.setup();
+    gui.add(min.set("min", 30.0, 0.0, 300.0));
+    gui.add(max.set("max", 3000.0, 0.0, 50000.0));
+    gui.add(threshold.set("threshold", 100.0, 0.0, 200.0));
+    gui.add(hole.set("hole", false));
+//
 
-    shaderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGB);
+    shaderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
     shaderFbo.begin();
     ofClear(ofFloatColor(0.1f,0.2f,0.3f));
     shaderFbo.end();
@@ -37,97 +51,125 @@ void ofApp::setup(){
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    
     // fix light in a permanent spot
-//    light.setPosition(uiPosition->x, uiPosition->y,uiPosition->z);
+    // light.setPosition(uiPosition->x, uiPosition->y,uiPosition->z);
+    
     // control light with UI
-//    lightPosition = vec4(uiPosition->x, uiPosition->y,uiPosition->z, 1.0);
+    // lightPosition = vec4(uiPosition->x, uiPosition->y,uiPosition->z, 1.0);
+    
     // bind light to the camera
     lightPosition = vec4(camera.getPosition(),1.0);
-    
-}
+        
+        
+    //
+    // ofxCV basic updates
+    //
+    //    webcam.update();
+    //    if (webcam.isFrameNew()){
+//            contour.setMinArea(min);
+//            contour.setMaxArea(max);
+//            contour.setThreshold(threshold);
+//            contour.setFindHoles(hole);
+//            contour.findContours(webcam);
+    //  }
+
+    }
+
+    //
+    // basic ofxCV webcam draw function
+    //
+    //
+    //void ofApp::draw(){
+    //    webcam.draw(0,0);
+    //    contour.draw();
+    //    gui.draw();
+    //}
 
 //--------------------------------------------------------------
 void ofApp::draw(){
+//
+// Render into an FBO
+//
+    shaderFbo.begin();
+    
+        ofEnableDepthTest();
+            light.enable();
+                camera.begin();
+                    surfaceShader.begin();
+
+                        matAmbient = ofFloatColor(0.01,0.01,0.0);
+                        matDiffuse = ofFloatColor(0.01,0.01,0.01);
+                        matSpecular = ofFloatColor(5.0,5.0,5.0);
+                        setUniforms();
+    
+                        ofClear(ofFloatColor(0.1f,0.2f,0.3f));
+                        bunny.draw();
+
+                    surfaceShader.end();
+                camera.end();
+            light.disable();
+        ofDisableDepthTest();
+    shaderFbo.end();
+
+
+//
+// Render into the frame buffer
+//
     
     ofEnableDepthTest();
-    light.enable();
-    camera.begin();
-    
-//    ofDrawBox(0,0,0,128);
-    
-    //
-    // Render into an FBO
-    //
-    
-//    shaderFbo.begin();
-    
-    surfaceShader.begin();
-    
-//    ofDrawSphere(uiPosition->x, uiPosition->y,uiPosition->z,2);
-    
-//    matAmbient = ofFloatColor(0.1,0.9,0.0);
-//    matDiffuse = ofFloatColor(0.1,0.1,0.1);
-//    matSpecular = ofFloatColor(3.5,4.0,5.0);
-//
-//    surfaceShader.setUniform4f("matAmbient", matAmbient);
-//    surfaceShader.setUniform4f("matDiffuse", matDiffuse);
-//    surfaceShader.setUniform4f("matSpecular", matSpecular);
-//    surfaceShader.setUniform1f("matShininess", matShininess);
-//    surfaceShader.setUniform4f("lightPosition", lightPosition);
-//    surfaceShader.setUniform4f("lightColor", lightColor);
-//    
-//    surfaceShader.setUniformTexture("specularTexture", shaderFbo.getTexture(),1);
-//
-//    bunny.draw();
-//
-//    surfaceShader.end();
-//
-//    shaderFbo.end();
-    
-//    shaderFbo.draw(0,0);
-    
-    //
-    // Render into the frame buffer
-    //
-    
-    surfaceShader.begin();
-    
-//    ofDrawSphere(uiPosition->x, uiPosition->y,uiPosition->z,2);
-    
-    matAmbient = ofFloatColor(0.1,0.1,0.2);
-    matDiffuse = ofFloatColor(0.1,0.1,0.1);
-    matSpecular = ofFloatColor(15.5,15.0,0.0);
+        
 
+        camera.begin();
+            light.enable();
+                surfaceShader.begin();
+                    matAmbient = ofFloatColor(0.1,0.1,0.2);
+                    matDiffuse = ofFloatColor(0.1,0.1,0.1);
+                    matSpecular = ofFloatColor(1.0,1.0,0.0);
+                    setUniforms();
+                
+    //                surfaceShader.setUniformTexture("specularTexture", shaderFbo.getTexture(),1);
+            
+                    bunny.draw();
+        
+            
+                surfaceShader.end();
 
+                ofDrawGrid(2.0,10, false, false, true, false);
+        
+            light.disable();
+
+        camera.end();
+    
+    
+    shaderFbo.readToPixels(fboPixels);
+    
+    contour.setMinArea(min);
+    contour.setMaxArea(max);
+    contour.setThreshold(threshold);
+    contour.setFindHoles(hole);
+    
+    contour.findContours(fboPixels);
+    
+    contour.draw();
+    
+//    shaderFbo.draw(0,0, ofGetWidth()/4,ofGetHeight()/4);
+        
+    ofDisableDepthTest();
+    
+    gui.draw();
+
+}
+
+//--------------------------------------------------------------
+void ofApp::setUniforms(){
     surfaceShader.setUniform4f("matAmbient", matAmbient);
     surfaceShader.setUniform4f("matDiffuse", matDiffuse);
     surfaceShader.setUniform4f("matSpecular", matSpecular);
     surfaceShader.setUniform1f("matShininess", matShininess);
     surfaceShader.setUniform4f("lightPosition", lightPosition);
     surfaceShader.setUniform4f("lightColor", lightColor);
-    
-    surfaceShader.setUniformTexture("specularTexture", shaderFbo.getTexture(),1);
 
-    bunny.draw();
-    
-    surfaceShader.end();
-    
-    
-    
-    
-    
-    
-    
-    
-    ofDrawGrid(2.0,10, false, false, true, false);
-
-    camera.end();
-    
-    light.disable();
-    ofDisableDepthTest();
-    
-    gui.draw();
-    
 }
 
 //--------------------------------------------------------------
