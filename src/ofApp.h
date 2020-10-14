@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxGui.h"
 #include "ofxCv.h"
+#include "ofxOsc.h"
 
 using namespace glm;
 
@@ -52,11 +53,18 @@ class ofApp : public ofBaseApp{
     
 //    ofVideoGrabber webcam;
     ofxCv::ContourFinder contour;
+    ofxCv::RectTracker tracker;
+    
 //    ofxPanel gui;
     ofParameter<float> min, max, threshold;
     ofParameter<bool> hole;
     ofParameter<bool> boxes;
     
     ofPixels fboPixels;
+    
+    ofxOscSender sender;
+    ofxOscBundle bundle;
+    ofxOscMessage message;
+    
 		
 };
