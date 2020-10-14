@@ -18,6 +18,7 @@ void ofApp::setup(){
     gui.add(max.set("max", 3000.0, 0.0, 50000.0));
     gui.add(threshold.set("threshold", 100.0, 0.0, 200.0));
     gui.add(hole.set("hole", false));
+    gui.add(boxes.set("boxes", false));
 //
 
     shaderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
@@ -46,7 +47,7 @@ void ofApp::setup(){
 
 //    ofDisableArbTex();
 //    ofEnableNormalizedTexCoords();
-    
+        
 }
 
 //--------------------------------------------------------------
@@ -151,13 +152,38 @@ void ofApp::draw(){
     
     contour.findContours(fboPixels);
     
-    contour.draw();
+    if (boxes){
+        contour.draw();
+    }
     
 //    shaderFbo.draw(0,0, ofGetWidth()/4,ofGetHeight()/4);
         
     ofDisableDepthTest();
     
     gui.draw();
+    
+    
+    ofSetColor(ofColor::white);
+    
+    int i = 1;
+//    for (cv::Rect rect: contour.getBoundingRects()){
+//        string rect_info;
+////        rect_info = to_string(rect.area()) + " " + to_string(rect.height);
+//        rect_info = to_string(rect.area());
+//        ofDrawBitmapString(rect_info, rect.x, rect.y-5);
+//        i++;
+//    };
+    
+    for (ofPolyline p: contour.getPolylines()){
+        string p_info;
+        p_info = to_string((int)p.getArea()) + " " + to_string((int)p.getPerimeter());
+        ofDrawBitmapString(p_info, p.getCentroid2D());
+        i++;
+    };
+    
+    
+    
+    
 
 }
 

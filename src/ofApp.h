@@ -45,7 +45,6 @@ class ofApp : public ofBaseApp{
     vec4 lightPosition;
     ofFloatColor lightColor;
     
-
     
     //
     // ofxCV setup
@@ -56,8 +55,8 @@ class ofApp : public ofBaseApp{
 //    ofxPanel gui;
     ofParameter<float> min, max, threshold;
     ofParameter<bool> hole;
+    ofParameter<bool> boxes;
     
     ofPixels fboPixels;
-
 		
 };
