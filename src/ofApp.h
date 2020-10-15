@@ -61,6 +61,7 @@ class ofApp : public ofBaseApp{
 //    ofVideoGrabber webcam;
     ofxCv::ContourFinder contour;
     ofxCv::RectTracker tracker;
+    ofxCv::RectTrackerFollower<SpotFollower> follower;
     
 //    ofxPanel gui;
     ofParameter<float> min, max, threshold;
