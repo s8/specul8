@@ -52,7 +52,7 @@ void ofApp::setup(){
 //    ofDisableArbTex();
 //    ofEnableNormalizedTexCoords();
     
-    sender.setup("127.0.0.1", 57120);
+    sender.setup(HOST, PORT);
         
 }
 
@@ -131,15 +131,32 @@ void ofApp::draw(){
     
     
     for(int i = 0; i < contour.size(); i++){
+        
         ofPoint center = toOf(contour.getCenter(i));
-        ofPushMatrix();
-        ofTranslate(center.x, center.y);
         int label = contour.getLabel(i);
-        string info = ofToString(label) + ":" + ofToString(tracker.getAge(label));
-        ofDrawBitmapString(info,0,0);
-        ofVec2f velocity = toOf(contour.getVelocity(i));
-        ofScale(5, 5);
-        ofDrawLine(0, 0, velocity.x, velocity.y);
+        
+        float pan = (center.x / ofGetWidth() * 2) - 1;
+        
+        message.clear();
+        message.setAddress("/pan");
+        message.addFloatArg(pan);
+//        bundle.addMessage(message);
+//        message.clear();
+        message.setAddress("/perimeter");
+        message.addFloatArg(contour.getPolyline(i).getPerimeter());
+        bundle.addMessage(message);
+        
+        ofDrawBitmapString(ofToString(label), ofGetWidth()-50, (i+1)*20);
+        
+        
+        ofPushMatrix();
+            ofTranslate(center.x, center.y);
+            
+            string info = ofToString(label) + ":" + ofToString(pan) + ":" + ofToString(tracker.getAge(label));
+            ofDrawBitmapString(info,0,0);
+            ofVec2f velocity = toOf(contour.getVelocity(i));
+            ofScale(5, 5);
+            ofDrawLine(0, 0, velocity.x, velocity.y);
         ofPopMatrix();
     }
     
@@ -160,8 +177,10 @@ void ofApp::draw(){
 //
 //    };
 
-    sender.sendMessage(message);
+//    sender.sendMessage(message);
     
+    sender.sendBundle(bundle);
+    bundle.clear();
     gui.draw();
     
 
