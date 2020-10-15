@@ -4,6 +4,7 @@
 #include "ofxGui.h"
 #include "ofxCv.h"
 #include "ofxOsc.h"
+#include "spotFollower.hpp"
 
 // send host (aka ip address)
 #define HOST "127.0.0.1"
