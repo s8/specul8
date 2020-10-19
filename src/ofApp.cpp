@@ -3,14 +3,52 @@
 using namespace ofxCv;
 using namespace cv;
 
+const float dyingTime = 1;
+
+//--------------------------------------------------------------
+void SpotFollower::setup(const cv::Rect& track){
+    color.setHsb(ofRandom(0,255),255,255);
+    cur = toOf(track).getCenter();
+    smooth = cur;
+}
+
+//--------------------------------------------------------------
+void SpotFollower::update(const cv::Rect& track){
+    cur = toOf(track).getCenter();
+    smooth.interpolate(cur, .5);
+    all.addVertex(smooth);
+}
+
+//--------------------------------------------------------------
+void SpotFollower::kill(){
+    float curTime = ofGetElapsedTimef();
+    if (startedDying == 0){
+        startedDying = curTime;
+    } else if (curTime - startedDying > dyingTime) {
+        dead = true;
+    }
+}
+
+//--------------------------------------------------------------
+void SpotFollower::draw(const ofPolyline& p){
+    ofPushStyle();
+    float size = 16;
+    ofSetColor(255);
+    if (startedDying){
+        ofSetColor(ofColor::red);
+        size = ofMap(ofGetElapsedTimef()-startedDying, 0, dyingTime, size, 0, true);
+    }
+    ofNoFill();
+    ofDrawCircle(cur,size);
+    ofSetColor(color);
+    all.draw();
+    ofSetColor(255);
+    ofDrawBitmapString(ofToString(label), cur);
+    ofPopStyle();
+}
+
 //--------------------------------------------------------------
 void ofApp::setup(){
-    
-    //
-    // lighting gui setup
-    //
-//    gui.setup();
-//    gui.add(uiPosition.set("position",ofVec3f(0,0,0),ofVec3f(-30,-30,-30),ofVec3f(30,30,30)));
     
 //
 // ofxCV setup
@@ -22,8 +60,8 @@ void ofApp::setup(){
     gui.add(hole.set("hole", false));
     gui.add(boxes.set("boxes", false));
 
-    contour.getTracker().setPersistence(15);
-    contour.getTracker().setMaximumDistance(32);
+    contourFinder.getTracker().setPersistence(15);
+    contourFinder.getTracker().setMaximumDistance(32);
 
     shaderFbo.allocate(ofGetWidth(), ofGetHeight(), GL_RGBA);
     shaderFbo.begin();
@@ -47,7 +85,6 @@ void ofApp::setup(){
     matShininess = 500.0;
     lightPosition = vec4(10.0,10.0,20.0,1.0);
     lightColor = ofFloatColor(1.0,1.0,0.8);
-//    matReflectivity = 0.7;
 
 //    ofDisableArbTex();
 //    ofEnableNormalizedTexCoords();
@@ -59,27 +96,16 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
-    // fix light in a permanent spot
-    // light.setPosition(uiPosition->x, uiPosition->y,uiPosition->z);
-    
-    // control light with UI
-    // lightPosition = vec4(uiPosition->x, uiPosition->y,uiPosition->z, 1.0);
-    
     // bind light to the camera
     lightPosition = vec4(camera.getPosition(),1.0);
-    contour.setMinArea(min);
-    contour.setMaxArea(max);
-    contour.setThreshold(threshold);
-    contour.setFindHoles(hole);
-
-    }
-
-
-//--------------------------------------------------------------
-void ofApp::draw(){
-//
-// Render into an FBO
-//
+    contourFinder.setMinArea(min);
+    contourFinder.setMaxArea(max);
+    contourFinder.setThreshold(threshold);
+    contourFinder.setFindHoles(hole);
+    
+    //
+    // Render into an FBO
+    //
     shaderFbo.begin();
         ofEnableDepthTest();
             light.enable();
@@ -100,6 +126,20 @@ void ofApp::draw(){
         ofDisableDepthTest();
     shaderFbo.end();
 
+    // put the contents of an FBO into pixels and load them into contourfinder
+    shaderFbo.readToPixels(fboPixels);
+    
+    contourFinder.findContours(fboPixels);
+//    tracker.track();
+//    tracker = contourFinder.getTracker();
+    tracker.track(contourFinder.getBoundingRects());
+    
+    }
+
+
+//--------------------------------------------------------------
+void ofApp::draw(){
+    
 //
 // Render into the frame buffer
 //
@@ -112,75 +152,64 @@ void ofApp::draw(){
                     matDiffuse = ofFloatColor(0.1,0.1,0.1);
                     matSpecular = ofFloatColor(1.0,1.0,0.0);
                     setUniforms();
-    //                surfaceShader.setUniformTexture("specularTexture", shaderFbo.getTexture(),1);
                     bunny.draw();
                 surfaceShader.end();
                 ofDrawGrid(2.0,10, false, false, true, false);
             light.disable();
         camera.end();
-    shaderFbo.readToPixels(fboPixels);
-    
-    contour.findContours(fboPixels);
-    tracker = contour.getTracker();
-    
-//    shaderFbo.draw(0,0, ofGetWidth()/4,ofGetHeight()/4);
         
     ofDisableDepthTest();
+    
+//    shaderFbo.draw(0,0, ofGetWidth()/4,ofGetHeight()/4);
     
     ofSetColor(ofColor::white);
     
     
-    for(int i = 0; i < contour.size(); i++){
-        
-        ofPoint center = toOf(contour.getCenter(i));
-        int label = contour.getLabel(i);
-        
-        float pan = (center.x / ofGetWidth() * 2) - 1;
-        
-        message.clear();
-        message.setAddress("/pan");
-        message.addFloatArg(pan);
-//        bundle.addMessage(message);
-//        message.clear();
-        message.setAddress("/perimeter");
-        message.addFloatArg(contour.getPolyline(i).getPerimeter());
-        bundle.addMessage(message);
-        
-        ofDrawBitmapString(ofToString(label), ofGetWidth()-50, (i+1)*20);
-        
-        
-        ofPushMatrix();
-            ofTranslate(center.x, center.y);
-            
-            string info = ofToString(label) + ":" + ofToString(pan) + ":" + ofToString(tracker.getAge(label));
-            ofDrawBitmapString(info,0,0);
-            ofVec2f velocity = toOf(contour.getVelocity(i));
-            ofScale(5, 5);
-            ofDrawLine(0, 0, velocity.x, velocity.y);
-        ofPopMatrix();
+//    for(int i = 0; i < contourFinder.size(); i++){
+//
+//        ofPoint center = toOf(contourFinder.getCenter(i));
+//        int label = contourFinder.getLabel(i);
+//        if (boxes){
+//            contourFinder.draw();
+//            ofDrawBitmapString(ofToString(label), ofGetWidth()-50, (i+1)*20);
+//            ofPushMatrix();
+//                ofTranslate(center.x, center.y);
+//                string info = ofToString(label) + ":" + ofToString(tracker.getAge(label));
+//                ofDrawBitmapString(info,0,0);
+//                ofVec2f velocity = toOf(contourFinder.getVelocity(i));
+//                ofScale(5, 5);
+//                ofDrawLine(0, 0, velocity.x, velocity.y);
+//            ofPopMatrix();
+//        }
+//    }
+    
+    vector<SpotFollower>& followers = tracker.getFollowers();
+    for(int i = 0; i < followers.size(); i++) {
+//        ofPolyline p = contourFinder.getPolyline(i);
+        followers[i].draw(contourFinder.getPolyline(i));
     }
     
     
-//    for (ofPolyline p: contour.getPolylines()){
-//        string p_info;
-//
-//        message.clear();
-//        message.setAddress("/perimeter");
-//        message.addIntArg(p.getPerimeter());
-//
-//        p_info = to_string(p.getPerimeter()/p.getArea());
-//
-//        if (boxes){
-//            contour.draw();
-//            ofDrawBitmapString(p_info, p.getCentroid2D());
-//        }
-//
-//    };
+    for (ofPolyline p: contourFinder.getPolylines()){
+        string p_info;
+
+        message.clear();
+        message.setAddress("/perimeter");
+        message.addIntArg(p.getPerimeter());
+
+        p_info = to_string(p.getPerimeter()/p.getArea());
+
+        if (boxes){
+            contourFinder.draw();
+            ofDrawBitmapString(p_info, p.getCentroid2D());
+        }
+
+    };
 
 //    sender.sendMessage(message);
-    
-    sender.sendBundle(bundle);
-    bundle.clear();
+//
+//    sender.sendBundle(bundle);
+//    bundle.clear();
     gui.draw();
     
 

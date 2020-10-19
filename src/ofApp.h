@@ -4,7 +4,7 @@
 #include "ofxGui.h"
 #include "ofxCv.h"
 #include "ofxOsc.h"
-#include "spotFollower.hpp"
+//#include "spotFollower.hpp"
 
 // send host (aka ip address)
 #define HOST "127.0.0.1"
@@ -12,7 +12,25 @@
 /// send port
 #define PORT 57120
 
+
 using namespace glm;
+
+class SpotFollower : public ofxCv::RectFollower{
+protected:
+    ofColor color;
+    ofVec3f cur, smooth;
+    float startedDying;
+    ofPolyline all;
+public:
+    SpotFollower()
+        :startedDying(0){
+    }
+    void setup(const cv::Rect& track);
+    void update(const cv::Rect& track);
+    void kill();
+    void draw(const ofPolyline& p);
+    
+};
 
 class ofApp : public ofBaseApp{
 
@@ -32,8 +50,7 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-    
-    void setUniforms();
+        void setUniforms();
     
     ofxPanel gui;
     ofParameter <ofVec3f> uiPosition;
@@ -58,10 +75,10 @@ class ofApp : public ofBaseApp{
     // ofxCV setup
     //
     
-//    ofVideoGrabber webcam;
-    ofxCv::ContourFinder contour;
-    ofxCv::RectTracker tracker;
-    ofxCv::RectTrackerFollower<SpotFollower> follower;
+    ofxCv::ContourFinder contourFinder;
+//    ofxCv::RectTracker tracker;
+//    ofxCv::RectTrackerFollower<SpotFollower> follower;
+    ofxCv::RectTrackerFollower<SpotFollower> tracker;
     
 //    ofxPanel gui;
     ofParameter<float> min, max, threshold;
@@ -70,9 +87,11 @@ class ofApp : public ofBaseApp{
     
     ofPixels fboPixels;
     
+    
     ofxOscSender sender;
     ofxOscBundle bundle;
     ofxOscMessage message;
+
     
 		
 };
