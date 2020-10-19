@@ -3,7 +3,7 @@
 using namespace ofxCv;
 using namespace cv;
 
-const float dyingTime = 1;
+const float dyingTime = 0.01;
 
 //--------------------------------------------------------------
 void SpotFollower::setup(const cv::Rect& track){
@@ -31,6 +31,7 @@ void SpotFollower::kill(){
 
 //--------------------------------------------------------------
 void SpotFollower::draw(const ofPolyline& p){
+//void SpotFollower::draw(){
     ofPushStyle();
     float size = 16;
     ofSetColor(255);
@@ -43,6 +44,7 @@ void SpotFollower::draw(const ofPolyline& p){
     ofSetColor(color);
     all.draw();
     ofSetColor(255);
+    p.draw();
     ofDrawBitmapString(ofToString(label), cur);
     ofPopStyle();
 }
@@ -96,7 +98,9 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    //
     // bind light to the camera
+    //
     lightPosition = vec4(camera.getPosition(),1.0);
     contourFinder.setMinArea(min);
     contourFinder.setMaxArea(max);
@@ -126,12 +130,11 @@ void ofApp::update(){
         ofDisableDepthTest();
     shaderFbo.end();
 
-    // put the contents of an FBO into pixels and load them into contourfinder
+    //
+    // feed FBO contents into contourFinder
+    //
     shaderFbo.readToPixels(fboPixels);
-    
     contourFinder.findContours(fboPixels);
-//    tracker.track();
-//    tracker = contourFinder.getTracker();
     tracker.track(contourFinder.getBoundingRects());
     
     }
@@ -140,10 +143,9 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-//
-// Render into the frame buffer
-//
-    
+    //
+    // Render into the frame buffer
+    //
     ofEnableDepthTest();
         camera.begin();
             light.enable();
@@ -164,52 +166,18 @@ void ofApp::draw(){
     
     ofSetColor(ofColor::white);
     
-    
-//    for(int i = 0; i < contourFinder.size(); i++){
-//
-//        ofPoint center = toOf(contourFinder.getCenter(i));
-//        int label = contourFinder.getLabel(i);
-//        if (boxes){
-//            contourFinder.draw();
-//            ofDrawBitmapString(ofToString(label), ofGetWidth()-50, (i+1)*20);
-//            ofPushMatrix();
-//                ofTranslate(center.x, center.y);
-//                string info = ofToString(label) + ":" + ofToString(tracker.getAge(label));
-//                ofDrawBitmapString(info,0,0);
-//                ofVec2f velocity = toOf(contourFinder.getVelocity(i));
-//                ofScale(5, 5);
-//                ofDrawLine(0, 0, velocity.x, velocity.y);
-//            ofPopMatrix();
-//        }
-//    }
-    
     vector<SpotFollower>& followers = tracker.getFollowers();
-    for(int i = 0; i < followers.size(); i++) {
-//        ofPolyline p = contourFinder.getPolyline(i);
-        followers[i].draw(contourFinder.getPolyline(i));
-    }
+    vector<ofPolyline> polylines = contourFinder.getPolylines();
     
+    ofDrawBitmapString(ofToString(polylines.size()), 10, ofGetHeight()-10);
     
-    for (ofPolyline p: contourFinder.getPolylines()){
-        string p_info;
-
-        message.clear();
-        message.setAddress("/perimeter");
-        message.addIntArg(p.getPerimeter());
-
-        p_info = to_string(p.getPerimeter()/p.getArea());
-
-        if (boxes){
-            contourFinder.draw();
-            ofDrawBitmapString(p_info, p.getCentroid2D());
+    if (boxes){
+        for (int i = 0; i < polylines.size(); i++){
+            ofPolyline p = polylines[i];
+            followers[i].draw(p);
         }
+    }
 
-    };
-
-//    sender.sendMessage(message);
-//
-//    sender.sendBundle(bundle);
-//    bundle.clear();
     gui.draw();
     
 

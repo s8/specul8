@@ -29,6 +29,7 @@ public:
     void update(const cv::Rect& track);
     void kill();
     void draw(const ofPolyline& p);
+//    void draw();
     
 };
 
