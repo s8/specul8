@@ -13,11 +13,31 @@ NetAddr.langPort
 OSCFunc.trace(bool: true, hideStatusMsg: false)
 
 
-OSCdef(\test,{|msg,time,addr,recvPort|
+OSCdef(\setup,{|msg,time,addr,recvPort|
+	">>>>>setup<<<<<".postln;
 	msg.postln;
-	n = s.nextNodeID;
-	s.sendMsg(\s_new,\light_echo,n,0,0,\freq,msg[6]);
-},'/new_spot');
+	s.sendMsg(\s_new,\light_echo,1000+msg[1],0,0,\freq,330);
+},'/setup');
+
+OSCdef(\update,{|msg,time,addr,recvPort|
+	"update".postln;
+	msg.postln;
+},'/update');
+
+OSCdef(\kill,{|msg,time,addr,recvPort|
+	">>>>>kill<<<<<".postln;
+	msg.postln;
+	s.sendMsg(\n_free,1000+msg[1]);
+},'/kill');
+
+
+s.sendMsg(\s_new,\light_echo,1001,0,0,\freq,330,\dur,3);
+s.sendMsg(\n_set,1001,\freq,550);
+s.sendMsg(\n_set,1001,\freq,770);
+s.sendMsg(\n_set,1001,\freq,770);
+s.sendMsg(\n_free,1001);
+
+
 
 OSCdef.freeAll;
 
@@ -32,7 +52,11 @@ SynthDef(\light_echo, {|amp=0.5, pan=0, freq=220, out=0,dur=1|
 Synth.new(\light_echo,[\freq,330,\pan,0,\dur,0.1])
 
 n = s.nextNodeID;
-s.sendMsg(\s_new,\light_echo,12,0,0,\freq,330)
+s.sendMsg(\s_new,\light_echo,12,0,0,\freq,330);
+
+
+
+s.sendMsg(\new_spot)
 
 5.postln
 

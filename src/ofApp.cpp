@@ -10,6 +10,10 @@ void SpotFollower::setup(const cv::Rect& track){
     color.setHsb(ofRandom(0,255),255,255);
     cur = toOf(track).getCenter();
     smooth = cur;
+    
+    m.clear();
+    m.setAddress("/setup");
+    m.addIntArg((int)label);
 }
 
 //--------------------------------------------------------------
@@ -17,11 +21,20 @@ void SpotFollower::update(const cv::Rect& track){
     cur = toOf(track).getCenter();
     smooth.interpolate(cur, .5);
     all.addVertex(smooth);
+    
+    m.clear();
+    m.setAddress("/update");
+    m.addIntArg((int)label);
 }
 
 //--------------------------------------------------------------
 void SpotFollower::kill(){
     float curTime = ofGetElapsedTimef();
+    
+    m.clear();
+    m.setAddress("/kill");
+    m.addIntArg((int)label);
+    
     if (startedDying == 0){
         startedDying = curTime;
     } else if (curTime - startedDying > dyingTime) {
@@ -48,6 +61,11 @@ void SpotFollower::draw(const ofPolyline& p){
     ofDrawBitmapString(ofToString(label), cur);
     ofPopStyle();
 }
+//--------------------------------------------------------------
+const ofxOscMessage& SpotFollower::getMessage() const{
+    return m;
+};
+
 
 //--------------------------------------------------------------
 void ofApp::setup(){
@@ -98,6 +116,8 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    bundle.clear();
+    
     //
     // bind light to the camera
     //
@@ -135,7 +155,16 @@ void ofApp::update(){
     //
     shaderFbo.readToPixels(fboPixels);
     contourFinder.findContours(fboPixels);
+    
     tracker.track(contourFinder.getBoundingRects());
+    
+    auto& followers = tracker.getFollowers();
+    
+    for (auto& follower : followers){
+        bundle.addMessage(follower.getMessage());
+    }
+
+    sender.sendBundle(bundle);
     
     }
 
@@ -159,17 +188,14 @@ void ofApp::draw(){
                 ofDrawGrid(2.0,10, false, false, true, false);
             light.disable();
         camera.end();
-        
     ofDisableDepthTest();
     
-//    shaderFbo.draw(0,0, ofGetWidth()/4,ofGetHeight()/4);
+    followers = tracker.getFollowers();
+    polylines = contourFinder.getPolylines();
     
-    ofSetColor(ofColor::white);
-    
-    vector<SpotFollower>& followers = tracker.getFollowers();
-    vector<ofPolyline> polylines = contourFinder.getPolylines();
-    
-    ofDrawBitmapString(ofToString(polylines.size()), 10, ofGetHeight()-10);
+    //
+    // draw tracked spots information
+    //
     
     if (boxes){
         for (int i = 0; i < polylines.size(); i++){

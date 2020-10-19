@@ -15,8 +15,10 @@
 
 using namespace glm;
 
+
 class SpotFollower : public ofxCv::RectFollower{
-protected:
+private:
+    ofxOscMessage m;
     ofColor color;
     ofVec3f cur, smooth;
     float startedDying;
@@ -25,11 +27,14 @@ public:
     SpotFollower()
         :startedDying(0){
     }
-    void setup(const cv::Rect& track);
-    void update(const cv::Rect& track);
-    void kill();
+    void setup(const cv::Rect& track) override;
+    void update(const cv::Rect& track) override;
+    void kill() override;
     void draw(const ofPolyline& p);
+    
+    const ofxOscMessage& getMessage() const;
 //    void draw();
+    
     
 };
 
@@ -53,10 +58,12 @@ class ofApp : public ofBaseApp{
 		void gotMessage(ofMessage msg);
         void setUniforms();
     
-    ofxPanel gui;
-    ofParameter <ofVec3f> uiPosition;
+    //
+    // FBO
+    //
     
     ofFbo shaderFbo;
+    ofPixels fboPixels;
 
     ofLight light;
     
@@ -73,22 +80,27 @@ class ofApp : public ofBaseApp{
     
     
     //
-    // ofxCV setup
+    // openCV
     //
     
     ofxCv::ContourFinder contourFinder;
-//    ofxCv::RectTracker tracker;
-//    ofxCv::RectTrackerFollower<SpotFollower> follower;
     ofxCv::RectTrackerFollower<SpotFollower> tracker;
+    vector<SpotFollower> followers;
+    vector<ofPolyline> polylines;
     
-//    ofxPanel gui;
+    //
+    // GUI
+    //
+    ofxPanel gui;
+    ofParameter <ofVec3f> uiPosition;
     ofParameter<float> min, max, threshold;
     ofParameter<bool> hole;
     ofParameter<bool> boxes;
     
-    ofPixels fboPixels;
     
-    
+    //
+    // OSC
+    //
     ofxOscSender sender;
     ofxOscBundle bundle;
     ofxOscMessage message;
