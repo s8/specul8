@@ -25,4 +25,4 @@ Further research on this project focusses on:
 [GitHub repository](https://github.com/s8/specul8/)
 
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/qz79cUZeDVE" frameborder="0" allow="accelerometer; autoplay;
+<iframe width="560" height="315" src="https://www.youtube.com/embed/qz79cUZeDVE" frameborder="0" allow="accelerometer; autoplay;>
